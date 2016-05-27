@@ -24,6 +24,21 @@ namespace MaxBotFA14
     public class MessagesController : ApiController
     {
         private List<Races> races;
+        private SyndicationFeed feed;
+        //private StringComparison comp = StringComparison.InvariantCultureIgnoreCase;
+        //private StringComparer scomp = new StringComparer(;
+
+
+        private bool MyContains(string string1, string string2)
+        {
+            return string1.IndexOf(string2, StringComparison.InvariantCultureIgnoreCase) != -1;
+        }
+
+        public MessagesController()
+        {
+            FetchGps();
+            FetchNews();
+        }
 
         //public MessagesController()
         //{
@@ -59,7 +74,31 @@ namespace MaxBotFA14
         }
 
 
-        private Message HandleUserMessage(Message message)
+        private async Task FetchNews()
+        {
+            using (XmlReader responseReader = XmlReader.Create(@"http://maxchallenge-bot.azurewebsites.net/news"))
+            {
+                //SyndicationItem bestMatchItem = null;
+                feed = SyndicationFeed.Load(responseReader);
+
+                //int maxMatch = int.MinValue;
+                //foreach (var item in feed.Items)
+                //{
+                //    int matchnum = words.Count(w => item.Summary.Text.Contains(w));
+                //    if (matchnum > maxMatch)
+                //    {
+                //        bestMatchItem = item;
+                //        maxMatch = matchnum;
+                //    }
+                //}
+                //if (bestMatchItem != null)
+                //{
+                //    message.CreateReplyMessage(StripHTML(bestMatchItem.Summary.Text));
+                //}
+            }
+        }
+
+        private async Task FetchGps()
         {
             if (races == null)
             {
@@ -70,142 +109,155 @@ namespace MaxBotFA14
                 }
                 races = JsonConvert.DeserializeObject<List<Races>>(eventJson);
             }
+        }
 
-
-            string gp = ExtractEvent(message.Text);
-            if (!string.IsNullOrEmpty(gp))
+        private Message HandleUserMessage(Message message)
+        {
+            try
             {
-
-                var gpInfo = races.FirstOrDefault(r => r.Event.Equals(gp));
-
-                if (gpInfo != null)
+                if (string.Equals(message.Text, "hi", StringComparison.InvariantCultureIgnoreCase))
                 {
-                    GpSession session = ExtractSession(message.Text);
-                    SessionEvent sevent = ExtractSessionEvent(message.Text);
+                    return message.CreateReplyMessage("Hi. I'm ready to answer your questions.");
+                }
 
+                if (races != null)
+                {
 
-                    if (message.Text.Contains("when") || message.Text.Contains("date") || message.Text.Contains("time") || message.Text.Contains("day"))
+                    string gp = ExtractEvent(message.Text);
+                    if (!string.IsNullOrEmpty(gp))
                     {
-                        if (session != GpSession.Unknown && sevent != SessionEvent.Unknown)
+
+                        var gpInfo = races.FirstOrDefault(r => r.Event.Equals(gp));
+
+                        if (gpInfo != null)
                         {
-                            switch (session)
+                            GpSession session = ExtractSession(message.Text);
+                            SessionEvent sevent = ExtractSessionEvent(message.Text);
+
+
+                            if (MyContains(message.Text, "when") || MyContains(message.Text, "date") || MyContains(message.Text, "time") || MyContains(message.Text, "day"))
                             {
-                                case GpSession.FP1:
+                                if (session != GpSession.Unknown && sevent != SessionEvent.Unknown)
+                                {
+                                    switch (session)
                                     {
-                                        if (sevent == SessionEvent.Begin)
-                                        {
-                                            return message.CreateReplyMessage(GetNiceTimeFromString(gpInfo.Schedule.Free_0020_practice_0020_1.time_from));
-                                        }
-                                        else if (sevent == SessionEvent.Date)
-                                        {
-                                            return message.CreateReplyMessage(gpInfo.Schedule.Free_0020_practice_0020_1.date);
-                                        }
-                                        else if (sevent == SessionEvent.Finish)
-                                        {
-                                            return message.CreateReplyMessage(GetNiceTimeFromString(gpInfo.Schedule.Free_0020_practice_0020_1.time_to));
-                                        }
-                                        break;
+                                        case GpSession.FP1:
+                                            {
+                                                if (sevent == SessionEvent.Begin)
+                                                {
+                                                    return message.CreateReplyMessage(GetNiceTimeFromString(gpInfo.Schedule.Free_0020_practice_0020_1.time_from));
+                                                }
+                                                else if (sevent == SessionEvent.Date)
+                                                {
+                                                    return message.CreateReplyMessage(gpInfo.Schedule.Free_0020_practice_0020_1.date);
+                                                }
+                                                else if (sevent == SessionEvent.Finish)
+                                                {
+                                                    return message.CreateReplyMessage(GetNiceTimeFromString(gpInfo.Schedule.Free_0020_practice_0020_1.time_to));
+                                                }
+                                                break;
+                                            }
+                                        case GpSession.FP2:
+                                            {
+                                                if (sevent == SessionEvent.Begin)
+                                                {
+                                                    return message.CreateReplyMessage(GetNiceTimeFromString(gpInfo.Schedule.Free_0020_practice_0020_2.time_from));
+                                                }
+                                                else if (sevent == SessionEvent.Date)
+                                                {
+                                                    return message.CreateReplyMessage(gpInfo.Schedule.Free_0020_practice_0020_2.date);
+                                                }
+                                                else if (sevent == SessionEvent.Finish)
+                                                {
+                                                    return message.CreateReplyMessage(GetNiceTimeFromString(gpInfo.Schedule.Free_0020_practice_0020_2.time_to));
+                                                }
+                                                break;
+                                            }
+                                        case GpSession.FP3:
+                                            {
+                                                if (sevent == SessionEvent.Begin)
+                                                {
+                                                    return message.CreateReplyMessage(GetNiceTimeFromString(gpInfo.Schedule.Free_0020_practice_0020_3.time_from));
+                                                }
+                                                else if (sevent == SessionEvent.Date)
+                                                {
+                                                    return message.CreateReplyMessage(gpInfo.Schedule.Free_0020_practice_0020_3.date);
+                                                }
+                                                else if (sevent == SessionEvent.Finish)
+                                                {
+                                                    return message.CreateReplyMessage(GetNiceTimeFromString(gpInfo.Schedule.Free_0020_practice_0020_3.time_to));
+                                                }
+                                                break;
+                                            }
+                                        case GpSession.Qualy:
+                                            {
+                                                if (sevent == SessionEvent.Begin)
+                                                {
+                                                    return message.CreateReplyMessage(GetNiceTimeFromString(gpInfo.Schedule.Qualifying.time_from));
+                                                }
+                                                else if (sevent == SessionEvent.Date)
+                                                {
+                                                    return message.CreateReplyMessage(GetNiceTimeFromString(gpInfo.Schedule.Qualifying.date));
+                                                }
+                                                else if (sevent == SessionEvent.Finish)
+                                                {
+                                                    return message.CreateReplyMessage(GetNiceTimeFromString(gpInfo.Schedule.Qualifying.time_to));
+                                                }
+                                                break;
+                                            }
+                                        case GpSession.Race:
+                                            {
+                                                if (sevent == SessionEvent.Begin)
+                                                {
+                                                    return message.CreateReplyMessage(GetNiceTimeFromString(gpInfo.Schedule.Race.time_from));
+                                                }
+                                                else if (sevent == SessionEvent.Date)
+                                                {
+                                                    return message.CreateReplyMessage(GetNiceTimeFromString(gpInfo.Schedule.Race.date));
+                                                }
+                                                else if (sevent == SessionEvent.Finish)
+                                                {
+                                                    return message.CreateReplyMessage(GetNiceTimeFromString(gpInfo.Schedule.Race.time_to));
+                                                }
+                                                break;
+                                            }
                                     }
-                                case GpSession.FP2:
-                                    {
-                                        if (sevent == SessionEvent.Begin)
-                                        {
-                                            return message.CreateReplyMessage(GetNiceTimeFromString(gpInfo.Schedule.Free_0020_practice_0020_2.time_from));
-                                        }
-                                        else if (sevent == SessionEvent.Date)
-                                        {
-                                            return message.CreateReplyMessage(gpInfo.Schedule.Free_0020_practice_0020_2.date);
-                                        }
-                                        else if (sevent == SessionEvent.Finish)
-                                        {
-                                            return message.CreateReplyMessage(GetNiceTimeFromString(gpInfo.Schedule.Free_0020_practice_0020_2.time_to));
-                                        }
-                                        break;
-                                    }
-                                case GpSession.FP3:
-                                    {
-                                        if (sevent == SessionEvent.Begin)
-                                        {
-                                            return message.CreateReplyMessage(GetNiceTimeFromString(gpInfo.Schedule.Free_0020_practice_0020_3.time_from));
-                                        }
-                                        else if (sevent == SessionEvent.Date)
-                                        {
-                                            return message.CreateReplyMessage(gpInfo.Schedule.Free_0020_practice_0020_3.date);
-                                        }
-                                        else if (sevent == SessionEvent.Finish)
-                                        {
-                                            return message.CreateReplyMessage(GetNiceTimeFromString(gpInfo.Schedule.Free_0020_practice_0020_3.time_to));
-                                        }
-                                        break;
-                                    }
-                                case GpSession.Qualy:
-                                    {
-                                        if (sevent == SessionEvent.Begin)
-                                        {
-                                            return message.CreateReplyMessage(GetNiceTimeFromString(gpInfo.Schedule.Qualifying.time_from));
-                                        }
-                                        else if (sevent == SessionEvent.Date)
-                                        {
-                                            return message.CreateReplyMessage(GetNiceTimeFromString(gpInfo.Schedule.Qualifying.date));
-                                        }
-                                        else if (sevent == SessionEvent.Finish)
-                                        {
-                                            return message.CreateReplyMessage(GetNiceTimeFromString(gpInfo.Schedule.Qualifying.time_to));
-                                        }
-                                        break;
-                                    }
-                                case GpSession.Race:
-                                    {
-                                        if (sevent == SessionEvent.Begin)
-                                        {
-                                            return message.CreateReplyMessage(GetNiceTimeFromString(gpInfo.Schedule.Race.time_from));
-                                        }
-                                        else if (sevent == SessionEvent.Date)
-                                        {
-                                            return message.CreateReplyMessage(GetNiceTimeFromString(gpInfo.Schedule.Race.date));
-                                        }
-                                        else if (sevent == SessionEvent.Finish)
-                                        {
-                                            return message.CreateReplyMessage(GetNiceTimeFromString(gpInfo.Schedule.Race.time_to));
-                                        }
-                                        break;
-                                    }
+                                }
+                            }
+                            else
+                            {
+                                TrackInfoPiece info = ExtractInfo(message.Text);
+                                if (info == TrackInfoPiece.Description)
+                                {
+                                    return message.CreateReplyMessage(gpInfo.Track.description);
+                                }
+                                else if (info == TrackInfoPiece.History)
+                                {
+                                    return message.CreateReplyMessage(gpInfo.Track.history);
+                                }
+                                else if (info == TrackInfoPiece.Quote)
+                                {
+                                    return message.CreateReplyMessage(gpInfo.Track.qoute);
+                                }
                             }
                         }
                     }
-                    else
-                    {
-                        TrackInfoPiece info = ExtractInfo(message.Text);
-                        if (info == TrackInfoPiece.Description)
-                        {
-                            return message.CreateReplyMessage(gpInfo.Track.description);
-                        }
-                        else if (info == TrackInfoPiece.History)
-                        {
-                            return message.CreateReplyMessage(gpInfo.Track.history);
-                        }
-                        else if (info == TrackInfoPiece.Quote)
-                        {
-                            return message.CreateReplyMessage(gpInfo.Track.qoute);
-                        }
-                    }
                 }
-            }
 
-            else
-            {
-                var rawwords = message.Text.Split(new char[] { ' ' });
-                var words = rawwords.Select(w => w.Trim(new char[] { ' ', ',', ';', '.', '!', '?', ';', ':' })).ToList();
-
-                using (XmlReader responseReader = XmlReader.Create(@"http://maxchallenge-bot.azurewebsites.net/news"))
+                if (feed != null)
                 {
+                    var rawwords = message.Text.Split(new char[] { ' ' });
+                    var words = rawwords.Select(w => w.Trim(new char[] { ' ', ',', ';', '.', '!', '?', ';', ':' })).ToList();
+
+                    //using (XmlReader responseReader = XmlReader.Create(@"http://maxchallenge-bot.azurewebsites.net/news"))
+                    //{
                     SyndicationItem bestMatchItem = null;
-                    SyndicationFeed feed = SyndicationFeed.Load(responseReader);
+                    //    SyndicationFeed feed = SyndicationFeed.Load(responseReader);
 
                     int maxMatch = int.MinValue;
                     foreach (var item in feed.Items)
                     {
-                        int matchnum = words.Count(w => item.Summary.Text.Contains(w));
+                        int matchnum = words.Count(w => w.Length > 4 && MyContains(item.Summary.Text, w));
                         if (matchnum > maxMatch)
                         {
                             bestMatchItem = item;
@@ -214,11 +266,15 @@ namespace MaxBotFA14
                     }
                     if (bestMatchItem != null)
                     {
-                        message.CreateReplyMessage(StripHTML(bestMatchItem.Summary.Text));
+                        return message.CreateReplyMessage(StripHTML(bestMatchItem.Summary.Text));
                     }
+                    //}
                 }
             }
-
+            catch (Exception ex)
+            {
+                return message.CreateReplyMessage("Sorry, I don't know the answer.");
+            }
             return message.CreateReplyMessage("Sorry, I don't know the answer.");
 
         }
@@ -235,15 +291,15 @@ namespace MaxBotFA14
 
         private TrackInfoPiece ExtractInfo(string text)
         {
-            if (text.Contains("description") || text.Contains("about"))
+            if (MyContains(text, "description") || MyContains(text, "about"))
             {
                 return TrackInfoPiece.Description;
             }
-            else if (text.Contains("history") || text.Contains("past"))
+            else if (MyContains(text, "history") || MyContains(text, "past"))
             {
                 return TrackInfoPiece.History;
             }
-            else if (text.Contains("think") || text.Contains("quote"))
+            else if (MyContains(text, "think") || MyContains(text, "quote"))
             {
                 return TrackInfoPiece.Quote;
             }
@@ -255,15 +311,15 @@ namespace MaxBotFA14
 
         private SessionEvent ExtractSessionEvent(string text)
         {
-            if (text.Contains("begin") || text.Contains("start"))
+            if (MyContains(text, "begin") || MyContains(text, "start"))
             {
                 return SessionEvent.Begin;
             }
-            else if (text.Contains("end") || text.Contains("finish"))
+            else if (MyContains(text, "end") || MyContains(text, "finish"))
             {
                 return SessionEvent.Finish;
             }
-            else if (text.Contains("day") || text.Contains("date"))
+            else if (MyContains(text, "day") || MyContains(text, "date"))
             {
                 return SessionEvent.Date;
             }
@@ -275,23 +331,23 @@ namespace MaxBotFA14
 
         private GpSession ExtractSession(string text)
         {
-            if (text.Contains("practice 1") || text.Contains("first practice") || text.Contains("first free practice"))
+            if (MyContains(text, "practice 1") || MyContains(text, "first practice") || MyContains(text, "first free practice"))
             {
                 return GpSession.FP1;
             }
-            else if (text.Contains("practice 2") || text.Contains("second practice") || text.Contains("second free practice"))
+            else if (MyContains(text, "practice 2") || MyContains(text, "second practice") || MyContains(text, "second free practice"))
             {
                 return GpSession.FP2;
             }
-            else if (text.Contains("practice 3") || text.Contains("third practice") || text.Contains("third free practice"))
+            else if (MyContains(text, "practice 3") || MyContains(text, "third practice") || MyContains(text, "third free practice"))
             {
                 return GpSession.FP3;
             }
-            else if (text.Contains("Qualifying"))
+            else if (MyContains(text, "Qualifying") || MyContains(text, "quali"))
             {
                 return GpSession.Qualy;
             }
-            else if (text.Contains("Race"))
+            else if (MyContains(text, "Race"))
             {
                 return GpSession.Race;
             }
@@ -303,87 +359,87 @@ namespace MaxBotFA14
 
         private string ExtractEvent(string text)
         {
-            if (text.Contains("AUSTRALIA") || text.Contains("Melbourne"))
+            if (MyContains(text, "AUSTRALIA") || MyContains(text, "Melbourne"))
             {
                 return "FORMULA 1 AUSTRALIA";
             }
-            else if (text.Contains("BAHRAIN"))
+            else if (MyContains(text, "BAHRAIN"))
             {
                 return "FORMULA 1 BAHRAIN";
             }
-            else if (text.Contains("CHINA") || text.Contains("chinese"))
+            else if (MyContains(text, "CHINA") || MyContains(text, "chinese"))
             {
                 return "FORMULA 1 CHINA";
             }
-            else if (text.Contains("RUSSIA") || text.Contains("Sochi"))
+            else if (MyContains(text, "RUSSIA") || MyContains(text, "Sochi"))
             {
                 return "FORMULA 1 RUSSIA";
             }
-            else if (text.Contains("SPAIN") || text.Contains("Spanish") || text.Contains("Barcelona"))
+            else if (MyContains(text, "SPAIN") || MyContains(text, "Spanish") || MyContains(text, "Barcelona"))
             {
                 return "FORMULA 1 SPAIN";
             }
-            else if (text.Contains("MONACO") || text.Contains("Monte Carlo"))
+            else if (MyContains(text, "MONACO") || MyContains(text, "Monte Carlo"))
             {
                 return "FORMULA 1 MONACO";
             }
-            else if (text.Contains("CANADA") || text.Contains("Montreal") || text.Contains("Canadian"))
+            else if (MyContains(text, "CANADA") || MyContains(text, "Montreal") || MyContains(text, "Canadian"))
             {
                 return "FORMULA 1 CANADA";
             }
-            else if (text.Contains("EUROPE") || text.Contains("Baku"))
+            else if (MyContains(text, "EUROPE") || MyContains(text, "Baku"))
             {
                 return "FORMULA 1 EUROPE";
             }
-            else if (text.Contains("AUSTRIA") || text.Contains("Spielberg") || text.Contains("The Red Bull Ring"))
+            else if (MyContains(text, "AUSTRIA") || MyContains(text, "Spielberg") || MyContains(text, "The Red Bull Ring"))
             {
                 return "FORMULA 1 AUSTRIA";
             }
-            else if (text.Contains("GREAT BRITAIN") || text.Contains("Silverstone"))
+            else if (MyContains(text, "GREAT BRITAIN") || MyContains(text, "Silverstone"))
             {
                 return "FORMULA 1 GREAT BRITAIN";
             }
-            else if (text.Contains("HUNGARY") || text.Contains("Hungaroring"))
+            else if (MyContains(text, "HUNGARY") || MyContains(text, "Hungaroring"))
             {
                 return "FORMULA 1 HUNGARY";
             }
-            else if (text.Contains("GERMANY") || text.Contains("Hockenheim"))
+            else if (MyContains(text, "GERMANY") || MyContains(text, "Hockenheim"))
             {
                 return "FORMULA 1 GERMANY";
             }
-            else if (text.Contains("BELGIUM") || text.Contains("Spa-Francorchamps"))
+            else if (MyContains(text, "BELGIUM") || MyContains(text, "Spa-Francorchamps"))
             {
                 return "FORMULA 1 BELGIUM";
             }
-            else if (text.Contains("ITALY") || text.Contains("Monza"))
+            else if (MyContains(text, "ITALY") || MyContains(text, "Monza"))
             {
                 return "FORMULA 1 ITALY";
             }
-            else if (text.Contains("SINGAPORE") || text.Contains("Marina Bay"))
+            else if (MyContains(text, "SINGAPORE") || MyContains(text, "Marina Bay"))
             {
                 return "FORMULA 1 SINGAPORE";
             }
-            else if (text.Contains("MALAYSIA") || text.Contains("Sepang"))
+            else if (MyContains(text, "MALAYSIA") || MyContains(text, "Sepang"))
             {
                 return "FORMULA 1 MALAYSIA";
             }
-            else if (text.Contains("JAPAN") || text.Contains("Suzuka"))
+            else if (MyContains(text, "JAPAN") || MyContains(text, "Suzuka"))
             {
                 return "FORMULA 1 JAPAN";
             }
-            else if (text.Contains("USA") || text.Contains("Americas"))
+            else if (MyContains(text, "USA") || MyContains(text, "Americas"))
             {
                 return "FORMULA 1 USA";
             }
-            else if (text.Contains("MEXICO") || text.Contains("Mexican"))
+            else if (MyContains(text, "MEXICO") || MyContains(text, "Mexican"))
             {
                 return "FORMULA 1 MEXICO";
             }
-            else if (text.Contains("BRAZIL"))
+            else if (MyContains(text, "BRAZIL"))
             {
                 return "FORMULA 1 BRAZIL";
             }
-            else if (text.Contains("ABU DHABI") || text.Contains("Yas Marina"))
+            else if (MyContains(text, "ABU DHABI") || MyContains(text, "Yas Marina"))
             {
                 return "FORMULA 1 ABU DHABI";
             }
